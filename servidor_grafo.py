@@ -1,13 +1,13 @@
 import networkx as nx
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request, redirect, session, url_for, render_template
 from flask_cors import CORS
 import pandas as pd
 
 app = Flask(__name__)
 CORS(app)
 
+
 # Mapeamento dos atributos do GEXF para nomes amigáveis no JavaScript
-# Note que os títulos no GEXF são strings, então usamos strings aqui.
 ATTRIBUTE_MAP = {
     'nome': 'nome',
     'grau_ponderado': 'grau_ponderado',
