@@ -35,8 +35,6 @@ def get_graph_data():
 
         nodes = []
         for node_id, data in G.nodes(data=True):
-            # NetworkX já lê os atributos usando seus títulos.
-            # Basta acessar os atributos com os nomes corretos.
             
             # Garante que os valores numéricos são do tipo correto e evita erros
             try:
@@ -93,30 +91,30 @@ def get_graph_data():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/demograficos', methods=['GET'])
-def le_demograficos():
-    excel_file_path = 'Banco_Analise_Redes dos Líderes Cariocas - GTTs TCs Mentoria.xlsx'
+@app.route('/demograficos_genero', methods=['GET'])
+def analise_generos():
     try:
         #Lê arquivo Excel
-        df = pd.read_excel(excel_file_path, sheet_name= 'Integrantes dos Projetos')
 
-        print("Colunas encontradas no arquivo Excel:", df.columns)
+        excel_file_path = 'Redes Lideres Cariocas.xlsx'
+        df = pd.read_excel(excel_file_path, sheet_name= 'Base para Demograficos')
+        
 
         #Tratamento de linhas em branco
+        df['Sexo'] = df['Sexo'].fillna('Não informado')
         df['Sexo'] = df['Sexo'].astype(str).str.strip().str.capitalize()
-        df['Sexo'].fillna('Não informado', inplace=True)
 
         df['Sexo'] = df['Sexo'].replace({'M': 'Masculino', 'F': 'Feminino'})
 
-        contagem_sexo = df['Sexo'].value_counts()
+        contagem_projetos = df['Sexo'].value_counts()
 
-        total = contagem_sexo.sum()
-        percentagem_sexo = (contagem_sexo / total) *100
+        total = contagem_projetos.sum()
+        percentagem_projetos = (contagem_projetos / total) *100
 
         #Formatando p/ gráfico
         demograficos = {
-            'labels': contagem_sexo.index.tolist(),
-            'values': percentagem_sexo.round(2).tolist()
+            'labels': contagem_projetos.index.tolist(),
+            'values': percentagem_projetos.round(2).tolist()
         }
 
         return jsonify(demograficos)
@@ -126,6 +124,38 @@ def le_demograficos():
     except Exception as erro:
         # A mensagem de erro será mais detalhada
         return jsonify({'Erro': f'Ocorreu um erro no servidor: {str(erro)}'}), 500
+
+@app.route('/demograficos_projetos_concluidos', methods=['GET'])
+def analise_projetos_concluidos():
+    try:
+        #Lê arquivo Excel
+        excel_file_path = 'Redes Lideres Cariocas.xlsx'
+        df = pd.read_excel(excel_file_path, sheet_name= 'Base para Demograficos')
+        
+
+        #Tratamento de linhas em branco
+        df['Status Projeto'] = df['Status Projeto'].fillna('Sem informações')
+        df['Status Projeto'] = df['Status Projeto'].astype(str).str.strip()
+
+        contagem_projetos = df['Status Projeto'].value_counts()
+
+        total = contagem_projetos.sum()
+        percentagem_projetos = (contagem_projetos / total) *100
+
+        #Formatando p/ gráfico
+        projetos = {
+            'labels': contagem_projetos.index.tolist(),
+            'values': percentagem_projetos.round(2).tolist()
+        }
+
+        return jsonify(projetos)
+    
+    except FileNotFoundError:
+        return jsonify({'Erro': f'Arquivo {excel_file_path} não encontrado.'}), 404
+    except Exception as erro:
+        # A mensagem de erro será mais detalhada
+        return jsonify({'Erro': f'Ocorreu um erro no servidor: {str(erro)}'}), 500
+
 
 
 if __name__ == '__main__':
