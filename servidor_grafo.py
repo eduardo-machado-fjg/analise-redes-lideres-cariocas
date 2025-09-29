@@ -1,6 +1,7 @@
 import networkx as nx
 from flask import Flask, jsonify
 from flask_cors import CORS
+import pandas as pd
 
 app = Flask(__name__)
 CORS(app)
@@ -91,6 +92,41 @@ def get_graph_data():
         return jsonify({'error': f'Arquivo {gexf_file_path} não encontrado.'}), 404
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@app.route('/demograficos', methods=['GET'])
+def le_demograficos():
+    excel_file_path = 'Banco_Analise_Redes dos Líderes Cariocas - GTTs TCs Mentoria.xlsx'
+    try:
+        #Lê arquivo Excel
+        df = pd.read_excel(excel_file_path, sheet_name= 'Integrantes dos Projetos')
+
+        print("Colunas encontradas no arquivo Excel:", df.columns)
+
+        #Tratamento de linhas em branco
+        df['Sexo'] = df['Sexo'].astype(str).str.strip().str.capitalize()
+        df['Sexo'].fillna('Não informado', inplace=True)
+
+        df['Sexo'] = df['Sexo'].replace({'M': 'Masculino', 'F': 'Feminino'})
+
+        contagem_sexo = df['Sexo'].value_counts()
+
+        total = contagem_sexo.sum()
+        percentagem_sexo = (contagem_sexo / total) *100
+
+        #Formatando p/ gráfico
+        demograficos = {
+            'labels': contagem_sexo.index.tolist(),
+            'values': percentagem_sexo.round(2).tolist()
+        }
+
+        return jsonify(demograficos)
+    
+    except FileNotFoundError:
+        return jsonify({'Erro': f'Arquivo {excel_file_path} não encontrado.'}), 404
+    except Exception as erro:
+        # A mensagem de erro será mais detalhada
+        return jsonify({'Erro': f'Ocorreu um erro no servidor: {str(erro)}'}), 500
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
